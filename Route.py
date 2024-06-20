@@ -104,3 +104,10 @@ class Route:
         retrieve = self.get_retrieval_coords()
         return ((start[0] - retrieve[0])**2 + (start[1] - retrieve[1])**2)**.5
     
+    # getter for route score
+    # score is defined as ideal length / total length
+    # best theoretical score is 1
+    # higher scores are better
+    def get_score(self):
+        return self.get_ideal_length() / self.get_total_length()
+    
