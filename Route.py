@@ -10,6 +10,8 @@ class Route:
             self.player = Player.pre_existing_players[self.player_id]
         else:
             self.player = Player(self.player_id)
+        self.player.add_position(self.player_position)
+        self.player.add_level(play["game_str"].iloc[0][-2:])
         self.df = self.create_df(play, player_pos)
 
     def create_df(self, play, player_pos):

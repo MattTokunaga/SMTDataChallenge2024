@@ -1,5 +1,7 @@
 class Player:
     
+    # class variable, dictionary of existing players
+    # key = player id, value = reference to player object
     pre_existing_players = {}
 
     def __init__(self, player_id):
@@ -9,9 +11,9 @@ class Player:
             return False
 
         self.player_id = player_id
-        self.levels_played = []
+        self.levels_played = set([])
         self.routes = []
-        self.positions = []
+        self.positions = set([])
         Player.pre_existing_players[player_id] = self
 
     def get_id(self):
@@ -22,7 +24,7 @@ class Player:
     
     def add_level(self, new_level):
         try:
-            self.levels_played.append(new_level)
+            self.levels_played.add(new_level)
             return True
         except:
             return False
@@ -45,7 +47,16 @@ class Player:
             if int(new_position) != new_position:
                 print("Error: Invalid position")
                 return False
-            self.positions.append(int(new_position))
+            self.positions.add(int(new_position))
             return True
         except:
             return False
+        
+    # class method
+    def get_existing_players():
+        return Player.pre_existing_players
+
+    # class method
+    def clear_existing_players():
+        Player.pre_existing_players = {}
+        return True
