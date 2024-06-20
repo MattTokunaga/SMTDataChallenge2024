@@ -1,5 +1,14 @@
 from Player import Player
 
+# function for determining of a route is relevant
+def is_relevant(play):
+    if ((play["player_position"] >= 7) 
+        & (play["player_position"] <= 9) 
+        & (play["event_code"] == 2).sum()) == 0:
+        return False
+    return True
+    
+
 class Route:
 
     def __init__(self, play, player_pos, ball_pos, game_info):
