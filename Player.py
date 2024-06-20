@@ -1,11 +1,14 @@
 class Player:
     
+    pre_existing_players = {}
+
     def __init__(self, player_id):
         
         self.player_id = player_id
         self.levels_played = []
         self.routes = []
         self.positions = []
+        Player.pre_existing_players[player_id] = self
 
     def get_id(self):
         return self.player_id
