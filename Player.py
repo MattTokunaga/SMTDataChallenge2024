@@ -4,6 +4,10 @@ class Player:
 
     def __init__(self, player_id):
         
+        if player_id != int(player_id):
+            print("Invalid player ID")
+            return False
+
         self.player_id = player_id
         self.levels_played = []
         self.routes = []
@@ -38,7 +42,10 @@ class Player:
     
     def add_position(self, new_position):
         try:
-            self.positions.append(new_position)
+            if int(new_position) != new_position:
+                print("Error: Invalid position")
+                return False
+            self.positions.append(int(new_position))
             return True
         except:
             return False
