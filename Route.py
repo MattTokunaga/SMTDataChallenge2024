@@ -1,13 +1,6 @@
 from Player import Player
-
-# function for determining of a route is relevant
-def is_relevant(play):
-    if ((play["player_position"] >= 7) 
-        & (play["player_position"] <= 9) 
-        & (play["event_code"] == 2).sum()) == 0:
-        return False
-    return True
-    
+from ipycanvas import Canvas
+import numpy as np
 
 class Route:
 
@@ -23,6 +16,16 @@ class Route:
         self.player.add_level(play["game_str"].iloc[0][-2:])
         self.player.add_route(self)
         self.df = self.create_df(play, player_pos)
+    
+    # class function for determining of a route is relevant
+    def is_relevant(play):
+        if ((play["player_position"] >= 7) 
+            & (play["player_position"] <= 9) 
+            & (play["event_code"] == 2)).sum() == 0:
+            return False
+        if play[play["event_code"] == 2]["player_position"].iloc[0] < 7:
+            return False
+        return True
 
     # not a getter for df instance variable
     # intended to be used to create df variable at time of initialization
@@ -120,3 +123,14 @@ class Route:
     def get_score(self):
         return self.get_ideal_length() / self.get_total_length()
     
+    # uses ipycanvas to visualize route
+    def visualize(self):
+        coords = self.get_coord_tuples()
+        num_coords = len(coords)
+        canv = Canvas(width  = 400, height = 400)
+        canv.scale(x = 1, y = -1)
+        canv.translate(x = canv.width / 2, y = -canv.height)
+        colors = np.array(range(num_coords)) * 255 / num_coords
+        colors = list(map(lambda x: ([255 - x, 255 - x, 255]), colors))
+        canv.fill_styled_circles(np.array(self.get_x_coords()), np.array(self.get_y_coords()), color = colors, radius = 1)
+        return canv
