@@ -1,11 +1,13 @@
 from Player import Player
 from ipycanvas import Canvas
 import numpy as np
+import pygame
 
 class Route:
 
     def __init__(self, play, player_pos, ball_pos, game_info):
 
+        self.play = play
         self.player_position = play[play["event_code"] == 2]["player_position"].iloc[0]
         self.player_id = self.find_player_id(play, game_info)
         if self.player_id in Player.pre_existing_players:
@@ -50,6 +52,10 @@ class Route:
             print("Error: Position not 7, 8, or 9")
             return False
         
+    # getter for play from game_events
+    def get_play(self):
+        return self.play
+
     # getter for player id
     # goes through player object
     def get_player_id(self):
@@ -123,14 +129,49 @@ class Route:
     def get_score(self):
         return self.get_ideal_length() / self.get_total_length()
     
-    # uses ipycanvas to visualize route
+    # getter for if the ball was caught
+    # not a pre-existing instance variable
+    def get_was_caught(self):
+        df = self.get_play()
+        df = df.head((df.reset_index()["event_code"] == 2).idxmax())
+        non_catches = set([9, 10, 16])
+        events = set(list(df["event_code"]))
+        intersection = non_catches.intersection(events)
+        return len(intersection) == 0
+    
+    # uses pygame to visualize route
     def visualize(self):
-        coords = self.get_coord_tuples()
-        num_coords = len(coords)
-        canv = Canvas(width  = 400, height = 400)
-        canv.scale(x = 1, y = -1)
-        canv.translate(x = canv.width / 2, y = -canv.height)
-        colors = np.array(range(num_coords)) * 255 / num_coords
-        colors = list(map(lambda x: ([255 - x, 255 - x, 255]), colors))
-        canv.fill_styled_circles(np.array(self.get_x_coords()), np.array(self.get_y_coords()), color = colors, radius = 1)
-        return canv
+        # coords = self.get_coord_tuples()
+        # num_coords = len(coords)
+        # canv = Canvas(width  = 400, height = 400)
+        # canv.scale(x = 1, y = -1)
+        # canv.translate(x = canv.width / 2, y = -canv.height)
+        # colors = np.array(range(num_coords)) * 255 / num_coords
+        # colors = list(map(lambda x: ([255 - x, 255 - x, 255]), colors))
+        # canv.fill_styled_circles(np.array(self.get_x_coords()), np.array(self.get_y_coords()), color = colors, radius = 1)
+        # return canv
+        pygame.init()
+        screen = pygame.display.set_mode((1280, 720))
+        clock = pygame.time.Clock()
+        running = True
+
+        while running:
+            # poll for events
+            # pygame.QUIT event means the user clicked X to close your window
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+
+            # fill the screen with a color to wipe away anything from last frame
+            screen.fill("purple")
+
+            # RENDER YOUR GAME HERE
+            pygame.draw.circle(screen, (0, 0, 0), (0, 0), 10)
+
+            # flip() the display to put your work on screen
+            pygame.display.flip()
+
+            clock.tick(60)  # limits FPS to 60
+
+        pygame.quit()
+        return True
