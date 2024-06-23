@@ -141,37 +141,37 @@ class Route:
     
     # uses pygame to visualize route
     def visualize(self):
-        # coords = self.get_coord_tuples()
-        # num_coords = len(coords)
-        # canv = Canvas(width  = 400, height = 400)
-        # canv.scale(x = 1, y = -1)
-        # canv.translate(x = canv.width / 2, y = -canv.height)
-        # colors = np.array(range(num_coords)) * 255 / num_coords
-        # colors = list(map(lambda x: ([255 - x, 255 - x, 255]), colors))
-        # canv.fill_styled_circles(np.array(self.get_x_coords()), np.array(self.get_y_coords()), color = colors, radius = 1)
-        # return canv
-        pygame.init()
-        screen = pygame.display.set_mode((1280, 720))
-        clock = pygame.time.Clock()
-        running = True
+        coords = self.get_coord_tuples()
+        num_coords = len(coords)
+        canv = Canvas(width  = 400, height = 400)
+        canv.scale(x = 1, y = -1)
+        canv.translate(x = canv.width / 2, y = -canv.height)
+        colors = np.array(range(num_coords)) * 255 / num_coords
+        colors = list(map(lambda x: ([255 - x, 255 - x, 255]), colors))
+        canv.fill_styled_circles(np.array(self.get_x_coords()), np.array(self.get_y_coords()), color = colors, radius = 1)
+        return canv
+        # pygame.init()
+        # screen = pygame.display.set_mode((1280, 720))
+        # clock = pygame.time.Clock()
+        # running = True
 
-        while running:
-            # poll for events
-            # pygame.QUIT event means the user clicked X to close your window
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
+        # while running:
+        #     # poll for events
+        #     # pygame.QUIT event means the user clicked X to close your window
+        #     for event in pygame.event.get():
+        #         if event.type == pygame.QUIT:
+        #             running = False
 
-            # fill the screen with a color to wipe away anything from last frame
-            screen.fill("purple")
+        #     # fill the screen with a color to wipe away anything from last frame
+        #     screen.fill("purple")
 
-            # RENDER YOUR GAME HERE
-            pygame.draw.circle(screen, (0, 0, 0), (0, 0), 10)
+        #     # RENDER YOUR GAME HERE
+        #     pygame.draw.circle(screen, (0, 0, 0), (0, 0), 10)
 
-            # flip() the display to put your work on screen
-            pygame.display.flip()
+        #     # flip() the display to put your work on screen
+        #     pygame.display.flip()
 
-            clock.tick(60)  # limits FPS to 60
+        #     clock.tick(60)  # limits FPS to 60
 
-        pygame.quit()
-        return True
+        # pygame.quit()
+        # return True
