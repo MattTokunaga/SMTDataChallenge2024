@@ -198,6 +198,13 @@ class Route:
         retrieve = self.get_retrieval_coords()
         return ((start[0] - retrieve[0])**2 + (start[1] - retrieve[1])**2)**.5
     
+    # getter for ideal route vector direction
+    # angle in radians
+    def get_direction(self):
+        start = self.get_start_coords()
+        retrieve = self.get_retrieval_coords()
+        return np.arccos((retrieve[0] - start[0]) / self.get_ideal_length())
+
     # getter for route score
     # score is defined as ideal length / total length
     # best theoretical score is 1
@@ -226,28 +233,17 @@ class Route:
         colors = list(map(lambda x: ([255 - x, 255 - x, 255]), colors))
         canv.fill_styled_circles(np.array(self.get_x_coords()), np.array(self.get_y_coords()), color = colors, radius = 1)
         return canv
-        # pygame.init()
-        # screen = pygame.display.set_mode((1280, 720))
-        # clock = pygame.time.Clock()
-        # running = True
-
-        # while running:
-        #     # poll for events
-        #     # pygame.QUIT event means the user clicked X to close your window
-        #     for event in pygame.event.get():
-        #         if event.type == pygame.QUIT:
-        #             running = False
-
-        #     # fill the screen with a color to wipe away anything from last frame
-        #     screen.fill("purple")
-
-        #     # RENDER YOUR GAME HERE
-        #     pygame.draw.circle(screen, (0, 0, 0), (0, 0), 10)
-
-        #     # flip() the display to put your work on screen
-        #     pygame.display.flip()
-
-        #     clock.tick(60)  # limits FPS to 60
-
-        # pygame.quit()
-        # return True
+    
+    def get_all_routes_df():
+        routes = Route.get_all_routes()
+        out = pd.DataFrame(columns= ["player_id", "position", "level", "ideal_length", "direction", "score"])
+        for i in range(len(routes)):
+            r = routes[i]
+            p_id = r.get_player_id()
+            pos = r.get_current_player_position()
+            lev = r.get_df()["game_str"].iloc[0][-2:]
+            idl_len = r.get_ideal_length()
+            dir = r.get_direction()
+            sc = r.get_score()
+            out.loc[i] = (p_id, pos, lev, idl_len, dir, sc)
+        return out
