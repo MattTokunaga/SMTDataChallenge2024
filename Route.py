@@ -1,9 +1,16 @@
 from Player import Player
 from ipycanvas import Canvas
 import numpy as np
-import pygame
+# import pygame
+from FindGameFiles import FindGameFiles
+import pandas as pd
 
 class Route:
+
+    all_routes = []
+    there_but_nan = 0
+    not_there_at_all = 0
+    something_else = 0
 
     def __init__(self, play, player_pos, ball_pos, game_info):
 
@@ -16,8 +23,15 @@ class Route:
             self.player = Player(self.player_id)
         self.player.add_position(self.player_position)
         self.player.add_level(play["game_str"].iloc[0][-2:])
+        self.start_coords = False
         self.player.add_route(self)
         self.df = self.create_df(play, player_pos)
+        try: 
+            self.start_coords = self.get_start_coords()
+            Route.add_to_all_routes(self)
+        except:
+            print("no start coords")
+            self.player.remove_last_route()
     
     # class function for determining of a route is relevant
     def is_relevant(play):
@@ -27,30 +41,89 @@ class Route:
             return False
         if play[play["event_code"] == 2]["player_position"].iloc[0] < 7:
             return False
+        if 4 not in play["event_code"].values:
+            return False
+        return True
+    
+    # class function for finding all relevant routes
+    # uses FindGameFiles.py
+    # doesn't return anything tangible
+    # instantiates Player and Route objects
+    # very much not efficient, the idea is to only use this once for each analysis
+    def find_all_relevant():
+        Player.clear_existing_players()
+        Route.clear_all_routes()
+
+        # Route.there_but_nan = 0
+        # Route.not_there_at_all = 0
+        # Route.something_else = 0
+
+        files = FindGameFiles()
+        total = len(files)
+        for i in range(total):
+            game = files[i]
+            try:
+                relevant = pd.read_csv(game[3]).groupby("play_per_game").filter(Route.is_relevant)
+            except:
+                print("game skipped")
+                continue
+            pp = pd.read_csv(game[0]) 
+            bp = pd.read_csv(game[1])
+            gi = pd.read_csv(game[2])
+            for play_num in relevant["play_per_game"].unique():
+                Route(relevant[relevant["play_per_game"] == play_num], pp, bp, gi)
+            print(f"Finished game {i} of {total}")
+        return True
+    
+    def clear_all_routes():
+        Route.all_routes = []
+        print("Routes cleared")
+        return True
+    
+    def get_all_routes():
+        return Route.all_routes
+    
+    def get_total_num_routes():
+        return len(Route.get_all_routes())
+    
+    def add_to_all_routes(route):
+        Route.all_routes.append(route)
         return True
 
     # not a getter for df instance variable
     # intended to be used to create df variable at time of initialization
     def create_df(self, play, player_pos):
         contact_timestamp = play[(play["player_position"] == 10) & (play["event_code"] == 4)]["timestamp"].iloc[0]
-        retrieval_timestamp = play[(play["player_position"] == self.player_position) & (play["event_code"] == 2)]["timestamp"].iloc[0]
+        retrieval_timestamp = play[(play["player_position"] == self.get_current_player_position()) & (play["event_code"] == 2)]["timestamp"].iloc[0]
         return player_pos[
-            (player_pos["player_position"] == self.player_position) & 
+            (player_pos["player_position"] == self.get_current_player_position()) & 
             (player_pos["timestamp"] >= contact_timestamp) & 
             (player_pos["timestamp"] <= retrieval_timestamp)]
         
     # not a getter for player id, used at initialization to find id
+    # returns -1 if no player id is found
     def find_player_id(self, play, game_info):
         df = play.merge(game_info, on = "play_per_game")
-        if self.player_position == 7:
-            return int(df["left_field"].iloc[0])
-        elif self.player_position == 8:
-            return int(df["center_field"].iloc[0])
-        elif self.player_position == 9:
-            return int(df["right_field"].iloc[0])
-        else:
-            print("Error: Position not 7, 8, or 9")
-            return False
+        try:
+            if self.player_position == 7:
+                return int(df["left_field"].iloc[0])
+            elif self.player_position == 8:
+                return int(df["center_field"].iloc[0])
+            elif self.player_position == 9:
+                return int(df["right_field"].iloc[0])
+            else:
+                print("Error: Position not 7, 8, or 9")
+                return False
+        except:
+            try:
+                if df.shape[0] == 0:
+                    print("worked at least once")
+                    Route.not_there_at_all += 1
+                elif not df["left_field"].iloc[0] > 0:
+                    Route.there_but_nan += 1
+            except:
+                Route.something_else += 1
+            return -1
         
     # getter for play from game_events
     def get_play(self):
@@ -97,7 +170,10 @@ class Route:
     # getter for starting coordinates
     # not a pre-existing instance variable
     def get_start_coords(self):
+        if self.start_coords:
+            return self.start_coords
         return (self.get_df()["field_x"].iloc[0], self.get_df()["field_y"].iloc[0])
+
     
     # getter for retrieval coordinates
     # not a pre-existing instance variable

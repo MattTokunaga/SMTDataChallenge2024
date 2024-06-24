@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
 
+# function for finding all game files
+# returns a list of tuples of form:
+# (player_pos, ball_pos, game_info, game_events)
 def FindGameFiles():
     files = []
     for season in os.listdir(r"2024_SMT_Data_Challenge\ball_pos"):

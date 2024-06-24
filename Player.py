@@ -48,6 +48,10 @@ class Player:
             return True
         except:
             return False
+        
+    def remove_last_route(self):
+        self.routes.pop()
+        return True
     
     # getter for positions
     def get_positions(self):
@@ -59,7 +63,17 @@ class Player:
             self.positions[new_position] = 0
         self.positions[new_position] += 1
         return True
-        
+    
+    # method to find average score
+    def find_average_score(self):
+        total = 0
+        for route in self.get_routes():
+            total += route.get_score()
+        return total / self.get_num_routes()
+    
+    # method to get total number of routes
+    def get_num_routes(self):
+        return len(self.get_routes())
         
     # class method to get all players
     def get_existing_players():
@@ -68,4 +82,5 @@ class Player:
     # class method to clear all players
     def clear_existing_players():
         Player.pre_existing_players = {}
+        print("Players cleared")
         return True
