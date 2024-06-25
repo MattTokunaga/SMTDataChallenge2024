@@ -4,8 +4,12 @@ import numpy as np
 # import pygame
 from FindGameFiles import FindGameFiles
 import pandas as pd
+from Metric import Metric
 
 class Route:
+
+    score_func = None
+    relevancy_func = None
 
     all_routes = []
     there_but_nan = 0
@@ -34,37 +38,43 @@ class Route:
             self.player.remove_last_route()
     
     # class function for determining of a route is relevant
-    def is_relevant(play):
-        if ((play["player_position"] >= 7) 
-            & (play["player_position"] <= 9) 
-            & (play["event_code"] == 2)).sum() == 0:
-            return False
-        if play[play["event_code"] == 2]["player_position"].iloc[0] < 7:
-            return False
-        if 4 not in play["event_code"].values:
-            return False
-        return True
+    def is_relevant():
+        return Route.relevancy_func
+        # if ((play["player_position"] >= 7) 
+        #     & (play["player_position"] <= 9) 
+        #     & (play["event_code"] == 2)).sum() == 0:
+        #     return False
+        # if play[play["event_code"] == 2]["player_position"].iloc[0] < 7:
+        #     return False
+        # if 4 not in play["event_code"].values:
+        #     return False
+        # return True
     
     # class function for finding all relevant routes
     # uses FindGameFiles.py
     # doesn't return anything tangible
     # instantiates Player and Route objects
     # very much not efficient, the idea is to only use this once for each analysis
-    def find_all_relevant():
+    def find_all_relevant(Metric):
         Player.clear_existing_players()
         Route.clear_all_routes()
+        Route.relevancy_func = Metric.get_relevancy_function()
+        Route.score_func = Metric.get_calculation_function()
 
         # Route.there_but_nan = 0
         # Route.not_there_at_all = 0
         # Route.something_else = 0
 
+        print("Starting file search")
         files = FindGameFiles()
+        print("Files accumulated")
         total = len(files)
         for i in range(total):
             game = files[i]
             try:
-                relevant = pd.read_csv(game[3]).groupby("play_per_game").filter(Route.is_relevant)
+                relevant = pd.read_csv(game[3]).groupby("play_per_game").filter(Route.is_relevant())
             except:
+                # print(1/0)
                 print("game skipped")
                 continue
             pp = pd.read_csv(game[0]) 
@@ -72,7 +82,7 @@ class Route:
             gi = pd.read_csv(game[2])
             for play_num in relevant["play_per_game"].unique():
                 Route(relevant[relevant["play_per_game"] == play_num], pp, bp, gi)
-            print(f"Finished game {i} of {total}")
+            print(f"Finished game {i+1} of {total}")
         return True
     
     def clear_all_routes():
@@ -210,7 +220,8 @@ class Route:
     # best theoretical score is 1
     # higher scores are better
     def get_score(self):
-        return self.get_ideal_length() / self.get_total_length()
+        return Route.score_func(self)
+        # return self.get_ideal_length() / self.get_total_length()
     
     # getter for if the ball was caught
     # not a pre-existing instance variable
@@ -236,14 +247,15 @@ class Route:
     
     def get_all_routes_df():
         routes = Route.get_all_routes()
-        out = pd.DataFrame(columns= ["player_id", "position", "level", "ideal_length", "direction", "score"])
+        out = pd.DataFrame(columns= ["route_obj", "game_str", "player_id", "position", "level", "ideal_length", "direction", "score"])
         for i in range(len(routes)):
             r = routes[i]
             p_id = r.get_player_id()
             pos = r.get_current_player_position()
-            lev = r.get_df()["game_str"].iloc[0][-2:]
+            gs = r.get_df()["game_str"].iloc[0]
+            lev = gs[-2:]
             idl_len = r.get_ideal_length()
             dir = r.get_direction()
             sc = r.get_score()
-            out.loc[i] = (p_id, pos, lev, idl_len, dir, sc)
+            out.loc[i] = (r, gs, p_id, pos, lev, idl_len, dir, sc)
         return out

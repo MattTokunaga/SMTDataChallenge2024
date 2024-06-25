@@ -1,27 +1,26 @@
 import numpy as np
 import pandas as pd
+pd.options.mode.chained_assignment = None
 
 # given a dataframe, calculates the
 # total variation distance from
 # a uniform distribution of given average
-# dataframe should already be grouped
-def calc_TVD(df, av):
-    return .5*(np.abs(df["score"] - av)).sum()
+# dataframe should NOT already be grouped
+def calc_TVD(df, col):
+    grouped = df[[col, "score"]].groupby(col).mean()
+    av = df["score"].mean()
+    return .5*(np.abs(grouped["score"] - av)).sum()
 
 
 # does a permutation test
 def permutation_tester(df, col, N):
-    pd.options.mode.chained_assignment = None
     df = df[[col, "score"]]
-    grouped = df.groupby(col).mean()
-    av = df["score"].mean()
-    observed_stat = calc_TVD(grouped, av)
+    observed_stat = calc_TVD(df, col)
     more_extreme = 0
     total = 0
     for _ in range(N):
         df["shuffled"] = df[col].sample(frac = 1).values
-        shuffled_grouped = df[["shuffled", "score"]].groupby("shuffled").mean()
-        stat = calc_TVD(shuffled_grouped, av)
+        stat = calc_TVD(df, "shuffled")
         if stat >= observed_stat:
             more_extreme += 1
         total += stat
