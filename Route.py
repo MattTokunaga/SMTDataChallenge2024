@@ -82,7 +82,8 @@ class Route:
             gi = pd.read_csv(game[2])
             for play_num in relevant["play_per_game"].unique():
                 Route(relevant[relevant["play_per_game"] == play_num], pp, bp, gi)
-            print(f"Finished game {i+1} of {total}")
+            if i % 10 == 0:
+                print(f"Finished game {i+1} of {total}")
         return True
     
     def clear_all_routes():
@@ -127,7 +128,7 @@ class Route:
         except:
             try:
                 if df.shape[0] == 0:
-                    print("worked at least once")
+                    # print("worked at least once")
                     Route.not_there_at_all += 1
                 elif not df["left_field"].iloc[0] > 0:
                     Route.there_but_nan += 1
@@ -247,7 +248,7 @@ class Route:
     
     def get_all_routes_df():
         routes = Route.get_all_routes()
-        out = pd.DataFrame(columns= ["route_obj", "game_str", "player_id", "position", "level", "ideal_length", "direction", "score"])
+        datalist = []
         for i in range(len(routes)):
             r = routes[i]
             p_id = r.get_player_id()
@@ -257,5 +258,6 @@ class Route:
             idl_len = r.get_ideal_length()
             dir = r.get_direction()
             sc = r.get_score()
-            out.loc[i] = (r, gs, p_id, pos, lev, idl_len, dir, sc)
+            datalist.append([r, gs, p_id, pos, lev, idl_len, dir, sc])
+        out = pd.DataFrame(columns= ["route_obj", "game_str", "player_id", "position", "level", "ideal_length", "direction", "score"], data = datalist)
         return out

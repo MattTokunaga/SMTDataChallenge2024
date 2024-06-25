@@ -1,3 +1,7 @@
+
+from Route import Route
+import PermHelpers
+
 class Metric:
     
     def __init__(self, relevancy_function, calculation_function):
@@ -9,8 +13,14 @@ class Metric:
     
     def get_calculation_function(self):
         return self.calculation_func
+    
+    def test_metric(self, N = 1000):
+        Route.find_all_relevant(self)
+        df = Route.get_all_routes_df()
+        home_only = df[df["player_id"].apply(lambda x: len(str(x)) == 3)]
+        PermHelpers.permutation_tester(home_only, "player_id", N)
 
-def route_eff_rel(play):
+def outfielder_retrieve_or_catch(play):
     if ((play["player_position"] >= 7) 
         & (play["player_position"] <= 9) 
         & (play["event_code"] == 2)).sum() == 0:
@@ -24,4 +34,4 @@ def route_eff_rel(play):
 def route_eff_score(route):
     return route.get_ideal_length() / route.get_total_length()
 
-route_efficiency = Metric(route_eff_rel, route_eff_score)
+route_efficiency = Metric(outfielder_retrieve_or_catch, route_eff_score)

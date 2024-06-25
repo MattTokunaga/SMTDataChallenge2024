@@ -27,6 +27,12 @@ def permutation_tester(df, col, N):
     p_val = more_extreme/N
     print(f"Out of {N} permutations, {more_extreme} had a test statistic at least as extreme as the observed test statistic.")
     print(f"This give a p-value of {p_val}.")
+    if p_val < 0.05:
+        print("This would be considered statistically significant")
+    else:
+        print("This would NOT be considered statistically signifiant")
+    print("-----")
     print(f"The observed statistic was {observed_stat}.")
     print(f"The average test statistic was {total / N}")
+
     return df
