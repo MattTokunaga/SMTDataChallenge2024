@@ -15,12 +15,17 @@ def calc_TVD(df, col):
 # does a permutation test
 def permutation_tester(df, col, N):
     df = df[[col, "score"]]
+    # calculates observed stat (TVD)
     observed_stat = calc_TVD(df, col)
     more_extreme = 0
     total = 0
+    # shuffles N times
     for _ in range(N):
+        # creates shuffled column
         df["shuffled"] = df[col].sample(frac = 1).values
+        # calculates test statistic as if shuffled column was real
         stat = calc_TVD(df, "shuffled")
+        # records if the test stat was as or more extreme than observed
         if stat >= observed_stat:
             more_extreme += 1
         total += stat

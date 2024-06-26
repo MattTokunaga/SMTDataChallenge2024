@@ -211,10 +211,17 @@ class Route:
     
     # getter for ideal route vector direction
     # angle in radians
+    # 0 means straight back, pi means straight in
+    # symmetric with respect to going left or right
     def get_direction(self):
         start = self.get_start_coords()
         retrieve = self.get_retrieval_coords()
-        return np.arccos((retrieve[0] - start[0]) / self.get_ideal_length())
+        dotprod = start[0] * (retrieve[0] - start[0]) + start[1] * (retrieve[1] - start[1])
+        startlen = (start[0]**2 + start[1]**2)**.5
+        angle = np.arccos(dotprod / (self.get_ideal_length() * startlen))
+        if angle <= np.pi:
+            return angle
+        return 2*np.pi - angle
 
     # getter for route score
     # score is defined as ideal length / total length
@@ -234,30 +241,83 @@ class Route:
         intersection = non_catches.intersection(events)
         return len(intersection) == 0
     
-    # uses pygame to visualize route
+    # uses ipycanvas to visualize route
     def visualize(self):
+        # get coords
         coords = self.get_coord_tuples()
         num_coords = len(coords)
+        # initialize canvas
         canv = Canvas(width  = 400, height = 400)
+        # transform to fit coordinate orientation
         canv.scale(x = 1, y = -1)
         canv.translate(x = canv.width / 2, y = -canv.height)
+        # draw field lines
+        canv.stroke_line(0, 0, 62.58, 63.64)
+        canv.stroke_line(0, 0, -62.58, 63.64)
+        # create colors (white is start, gets darker thru time)
         colors = np.array(range(num_coords)) * 255 / num_coords
         colors = list(map(lambda x: ([255 - x, 255 - x, 255]), colors))
+        # draws circles
         canv.fill_styled_circles(np.array(self.get_x_coords()), np.array(self.get_y_coords()), color = colors, radius = 1)
         return canv
     
+    # function to get velocity tuples (just subtracting consecutive positions)
+    # (x velocity, y velocity, magnitude)
+    # returns a list
+    def get_vel_tuples(self):
+        coords = self.get_coord_tuples()
+        vel = []
+        for i in range(len(coords)-1):
+            velvec = (coords[i+1][0] - coords[i][0], coords[i+1][1]-coords[i][1])
+            vel.append((velvec[0], velvec[1], (velvec[0]**2 + velvec[1]**2)**.5))
+        return vel
+
+    # same but for acceleration (just subtracting consecutive velocities)
+    def get_accel_tuples(self):
+        vel = self.get_vel_tuples()
+        acc = []
+        for i in range(len(vel)-1):
+            accvec = (vel[i+1][0] - vel[i][0], vel[i+1][1]-vel[i][1])
+            acc.append((accvec[0], accvec[1], (accvec[0]**2 + accvec[1]**2)**.5))
+        return acc
+        
+
+    # function using ipycanvas to visualize acceleration
+    def visualize_accel(self, type = "mag"):
+        acc = self.get_accel_tuples()
+        accdf = pd.DataFrame(columns= ["xacc", "yacc", "mag"], data  = acc)
+        accdf = accdf.reset_index()
+        if type == "mag":
+            accdf = accdf.sort_values("mag").iloc[:-10]
+            accdf = accdf.sort_values("index")
+            return accdf.plot(kind = "line", x = "index", y = "mag")
+            
+    # returns a dataframe with every route
     def get_all_routes_df():
+        # gets list of route objects
         routes = Route.get_all_routes()
         datalist = []
+
+        #loops through every route object
         for i in range(len(routes)):
+            # route object itself
             r = routes[i]
+            # player id
             p_id = r.get_player_id()
+            # player position (during that play)
             pos = r.get_current_player_position()
+            # game string
             gs = r.get_df()["game_str"].iloc[0]
+            # level (1A, 2A, 3A, 4A)
             lev = gs[-2:]
+            # gets euclidean distance to retrieval spot from start
             idl_len = r.get_ideal_length()
+            # gets direction, angle in radians
             dir = r.get_direction()
+            # gets score for this route
             sc = r.get_score()
             datalist.append([r, gs, p_id, pos, lev, idl_len, dir, sc])
+
+        # creates dataframe
         out = pd.DataFrame(columns= ["route_obj", "game_str", "player_id", "position", "level", "ideal_length", "direction", "score"], data = datalist)
         return out
