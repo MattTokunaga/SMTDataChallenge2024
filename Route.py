@@ -5,6 +5,7 @@ import numpy as np
 from FindGameFiles import FindGameFiles
 import pandas as pd
 from Metric import Metric
+from Animation import plot_animation
 
 class Route:
 
@@ -36,6 +37,10 @@ class Route:
         except:
             print("no start coords")
             self.player.remove_last_route()
+        
+        self.play_id = play["play_id"].iloc[0]
+        self.ball_pos = ball_pos[ball_pos["play_id"] == self.play_id]
+        self.player_pos = player_pos[player_pos["play_id"] == self.play_id]
     
     # class function for determining of a route is relevant
     def is_relevant():
@@ -222,6 +227,17 @@ class Route:
         if angle <= np.pi:
             return angle
         return 2*np.pi - angle
+    
+    # getter for hang time
+    # in milliseconds, subtracts timestamps
+    def get_hang_time(self):
+        play = self.get_play()
+        play = play.loc[(play["event_code"] == 4).idxmax():(play["event_code"] == 2).idxmax()]
+        if 255 not in play["player_position"].values:
+            return play["timestamp"].iloc[-1] - play["timestamp"].iloc[0]
+        else:
+            bounceonly = play.loc[:(play["player_position"] == 255).idxmax()]
+            return bounceonly["timestamp"].iloc[-1] - bounceonly["timestamp"].iloc[0]
 
     # getter for route score
     # score is defined as ideal length / total length
@@ -243,23 +259,25 @@ class Route:
     
     # uses ipycanvas to visualize route
     def visualize(self):
-        # get coords
-        coords = self.get_coord_tuples()
-        num_coords = len(coords)
-        # initialize canvas
-        canv = Canvas(width  = 400, height = 400)
-        # transform to fit coordinate orientation
-        canv.scale(x = 1, y = -1)
-        canv.translate(x = canv.width / 2, y = -canv.height)
-        # draw field lines
-        canv.stroke_line(0, 0, 62.58, 63.64)
-        canv.stroke_line(0, 0, -62.58, 63.64)
-        # create colors (white is start, gets darker thru time)
-        colors = np.array(range(num_coords)) * 255 / num_coords
-        colors = list(map(lambda x: ([255 - x, 255 - x, 255]), colors))
-        # draws circles
-        canv.fill_styled_circles(np.array(self.get_x_coords()), np.array(self.get_y_coords()), color = colors, radius = 1)
-        return canv
+        # # get coords
+        # coords = self.get_coord_tuples()
+        # num_coords = len(coords)
+        # # initialize canvas
+        # canv = Canvas(width  = 400, height = 400)
+        # # transform to fit coordinate orientation
+        # canv.scale(x = 1, y = -1)
+        # canv.translate(x = canv.width / 2, y = -canv.height)
+        # # draw field lines
+        # canv.stroke_line(0, 0, 62.58, 63.64)
+        # canv.stroke_line(0, 0, -62.58, 63.64)
+        # # create colors (white is start, gets darker thru time)
+        # colors = np.array(range(num_coords)) * 255 / num_coords
+        # colors = list(map(lambda x: ([255 - x, 255 - x, 255]), colors))
+        # # draws circles
+        # canv.fill_styled_circles(np.array(self.get_x_coords()), np.array(self.get_y_coords()), color = colors, radius = 1)
+        # return canv
+        return plot_animation(self.player_pos, self.ball_pos, self.play_id)
+        
     
     # function to get velocity tuples (just subtracting consecutive positions)
     # (x velocity, y velocity, magnitude)
