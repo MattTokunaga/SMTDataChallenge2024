@@ -22,8 +22,8 @@ class Route:
         self.play = play
         self.player_position = play[play["event_code"] == 2]["player_position"].iloc[0]
         self.player_id = self.find_player_id(play, game_info)
-        if self.player_id in Player.pre_existing_players:
-            self.player = Player.pre_existing_players[self.player_id]
+        if self.player_id in Player.get_existing_players():
+            self.player = Player.get_existing_players()[self.player_id]
         else:
             self.player = Player(self.player_id)
         self.player.add_position(self.player_position)

@@ -84,3 +84,14 @@ class Player:
         Player.pre_existing_players = {}
         print("Players cleared")
         return True
+    
+    # instance method to get top speed
+    # returns value in feet per second
+    def get_top_speed(self):
+        output = 0
+        for route in self.get_routes():
+            veltups = route.get_vel_tuples()
+            for tup in veltups:
+                if tup[2] * 20 > output:
+                    output = tup[2] * 20
+        return output
