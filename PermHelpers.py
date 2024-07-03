@@ -6,15 +6,15 @@ pd.options.mode.chained_assignment = None
 # total variation distance from
 # a uniform distribution of given average
 # dataframe should NOT already be grouped
-def calc_TVD(df, col):
-    grouped = df[[col, "score"]].groupby(col).mean()
-    av = df["score"].mean()
-    return .5*(np.abs(grouped["score"] - av)).sum()
+def calc_TVD(df, col, score_col):
+    grouped = df[[col, score_col]].groupby(col).mean()
+    av = df[score_col].mean()
+    return .5*(np.abs(grouped[score_col] - av)).sum()
 
 
 # does a permutation test
-def permutation_tester(df, col, N):
-    df = df[[col, "score"]]
+def permutation_tester(df, col, N, score_col):
+    df = df[[col, score_col]]
     # calculates observed stat (TVD)
     observed_stat = calc_TVD(df, col)
     more_extreme = 0

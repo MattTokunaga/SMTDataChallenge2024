@@ -4,12 +4,11 @@ import numpy as np
 # import pygame
 from FindGameFiles import FindGameFiles
 import pandas as pd
-from Metric import Metric
 from Animation import plot_animation
 
 class Route:
 
-    score_func = None
+    score_funcs = {}
     relevancy_func = None
 
     all_routes = []
@@ -60,11 +59,13 @@ class Route:
     # doesn't return anything tangible
     # instantiates Player and Route objects
     # very much not efficient, the idea is to only use this once for each analysis
-    def find_all_relevant(Metric):
+    def find_all_relevant(Metrics):
+        from Metric import Metric
         Player.clear_existing_players()
         Route.clear_all_routes()
-        Route.relevancy_func = Metric.get_relevancy_function()
-        Route.score_func = Metric.get_calculation_function()
+        Route.relevancy_func = Metrics[0].get_relevancy_function()
+        for metric in Metrics:
+            Route.score_funcs[metric.get_name()] = metric.get_calculation_function()
 
         # Route.there_but_nan = 0
         # Route.not_there_at_all = 0
@@ -243,10 +244,17 @@ class Route:
     # score is defined as ideal length / total length
     # best theoretical score is 1
     # higher scores are better
-    def get_score(self):
-        return Route.score_func(self)
+    def get_scores(self):
+        out = {}
+        play = self.get_play()
+        scorefuncs = Route.get_score_funcs()
+        for metric in scorefuncs:
+            out[metric] = scorefuncs[metric](play)
+        return out
         # return self.get_ideal_length() / self.get_total_length()
     
+    def get_score_funcs():
+        return Route.score_funcs
     # getter for if the ball was caught
     # not a pre-existing instance variable
     def get_was_caught(self):
@@ -283,21 +291,19 @@ class Route:
     # (x velocity, y velocity, magnitude)
     # returns a list
     def get_vel_tuples(self):
-        coords = self.get_coord_tuples()
-        vel = []
-        for i in range(len(coords)-1):
-            velvec = (coords[i+1][0] - coords[i][0], coords[i+1][1]-coords[i][1])
-            vel.append((velvec[0], velvec[1], (velvec[0]**2 + velvec[1]**2)**.5))
-        return vel
+        coords = pd.DataFrame(self.get_coord_tuples())
+        xvels = coords[0].shift(-1) - coords[0]
+        yvels = coords[1].shift(-1) - coords[1]
+        mags = (xvels**2 + yvels**2)**.5
+        return list(zip(xvels, yvels, mags))
 
     # same but for acceleration (just subtracting consecutive velocities)
     def get_accel_tuples(self):
-        vel = self.get_vel_tuples()
-        acc = []
-        for i in range(len(vel)-1):
-            accvec = (vel[i+1][0] - vel[i][0], vel[i+1][1]-vel[i][1])
-            acc.append((accvec[0], accvec[1], (accvec[0]**2 + accvec[1]**2)**.5))
-        return acc
+        vel = pd.DataFrame(self.get_vel_tuples())
+        xaccs = vel[0].shift(-1) - vel[0]
+        yaccs = vel[1].shift(-1) - vel[1]
+        mags = (xaccs**2 + yaccs**2)**.5
+        return list(zip(xaccs, yaccs, mags))
         
 
     # function using ipycanvas to visualize acceleration
@@ -332,10 +338,17 @@ class Route:
             idl_len = r.get_ideal_length()
             # gets direction, angle in radians
             dir = r.get_direction()
-            # gets score for this route
-            sc = r.get_score()
-            datalist.append([r, gs, p_id, pos, lev, idl_len, dir, sc])
+            datalist.append([r, gs, p_id, pos, lev, idl_len, dir])
 
         # creates dataframe
-        out = pd.DataFrame(columns= ["route_obj", "game_str", "player_id", "position", "level", "ideal_length", "direction", "score"], data = datalist)
+        out = pd.DataFrame(columns= ["route_obj", "game_str", "player_id", "position", "level", "ideal_length", "direction"], data = datalist)
+
+        # finds scores
+        for metric in Route.get_score_funcs():
+            scores = []
+            for i in range(len(routes)):
+                r = routes[i]
+                scores.append(Route.get_score_funcs()[metric](r))
+            scores = pd.Series(scores).rename(metric)
+            out = pd.concat([out, scores], axis = 1)
         return out

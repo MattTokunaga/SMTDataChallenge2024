@@ -1,3 +1,5 @@
+import pandas as pd
+
 class Player:
     
     # class variable, dictionary of existing players
@@ -90,8 +92,11 @@ class Player:
     def get_top_speed(self):
         output = 0
         for route in self.get_routes():
-            veltups = route.get_vel_tuples()
-            for tup in veltups:
-                if tup[2] * 20 > output:
-                    output = tup[2] * 20
-        return output
+            postups = pd.DataFrame(route.get_coord_tuples())
+            # shift by 10 means that it takes average speeds over half seconds
+            xshifts = postups[0].shift(-10) - postups[0]
+            yshifts = postups[1].shift(-10) - postups[1]
+            mags = (xshifts**2 + yshifts**2)**.5
+            if mags.max() > output:
+                output = mags.max()
+        return output * 2

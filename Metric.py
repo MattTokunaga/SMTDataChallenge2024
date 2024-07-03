@@ -5,9 +5,10 @@ import PermHelpers
 # class for metrics
 class Metric:
     
-    def __init__(self, relevancy_function, calculation_function):
+    def __init__(self, relevancy_function, calculation_function, name):
         self.relevancy_func = relevancy_function
         self.calculation_func = calculation_function
+        self.name = name
     
     # gets function to determine if a play is relevant based on game events table
     # returns another function
@@ -18,6 +19,10 @@ class Metric:
     # returns another function
     def get_calculation_function(self):
         return self.calculation_func
+    
+    # getter for name
+    def get_name(self):
+        return self.name
     
     # tests the metric to see if it is significantly different from being random
     def test_metric(self, N = 1000):
@@ -44,7 +49,7 @@ def route_eff_score(route):
     return route.get_ideal_length() / route.get_total_length()
 
 # route efficiency as a Metric object
-route_efficiency = Metric(outfielder_retrieve_or_catch, route_eff_score)
+route_efficiency = Metric(outfielder_retrieve_or_catch, route_eff_score, "route efficiency")
 
 
 # measures the break a player gets on a route
@@ -54,11 +59,29 @@ def break_score(route):
     mags = list(map(lambda x: x[2], accels[:5]))
     return max(mags)
 
-break_metric = Metric(outfielder_retrieve_or_catch, break_score)
+break_metric = Metric(outfielder_retrieve_or_catch, break_score, "acc mag break")
 
 # simply uses player id as the metric
 # should be literally the most statistically significant
 def id_score(route):
     return route.get_player_id()
 
-id_metric = Metric(outfielder_retrieve_or_catch, id_score)
+id_metric = Metric(outfielder_retrieve_or_catch, id_score, "id test")
+
+# jump metric as defined by statcast
+# at least how I assume its calculated
+def jump_score(route):
+    df = route.get_df()
+    if df.shape[0] < 60:
+        return -1
+    start = route.get_start_coords()
+    retrieve = route.get_retrieval_coords()
+    three_sec_coords_x = df["field_x"].iloc[59]
+    three_sec_coords_y = df["field_y"].iloc[59]
+    total_vec = (retrieve[0] - start[0], retrieve[1] - start[1])
+    three_vec = (three_sec_coords_x - start[0], three_sec_coords_y - start[1])
+    total_length = route.get_ideal_length()
+    dotprod = three_vec[0] * total_vec[0] + three_vec[1] * total_vec[1]
+    return dotprod / total_length
+
+statcast_jump = Metric(outfielder_retrieve_or_catch, jump_score, "statcast jump")
