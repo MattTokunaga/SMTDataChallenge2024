@@ -1,9 +1,18 @@
 from sklearn.pipeline import Pipeline
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
 
 def create_model(data):
+    preproc = ColumnTransformer(
+        transformers= [
+            ("one-hot", OneHotEncoder(drop = "first"), ["direction"])
+        ],
+        remainder= "passthrough"
+    )
     pl = Pipeline([
+        ("preproc", preproc),
         ("scaler", StandardScaler()),
         ("MLP", MLPClassifier())
     ])

@@ -217,18 +217,31 @@ class Route:
     
     # getter for ideal route vector direction
     # angle in radians
-    # 0 means straight back, pi means straight in
-    # symmetric with respect to going left or right
-    def get_direction(self):
+    # 0 is straight back, pi/2 is straight left
+    # pi is straight forward, 3pi/2 is straight right
+    def get_raw_angle(self):
         start = self.get_start_coords()
         retrieve = self.get_retrieval_coords()
-        dotprod = start[0] * (retrieve[0] - start[0]) + start[1] * (retrieve[1] - start[1])
-        startlen = (start[0]**2 + start[1]**2)**.5
-        angle = np.arccos(dotprod / (self.get_ideal_length() * startlen))
-        if angle <= np.pi:
-            return angle
-        return 2*np.pi - angle
-    
+        direcvec = (retrieve[0] - start[0], retrieve[1] - start[1])
+        angle = np.arctan2(start[1], start[0]) - np.arctan2(direcvec[1], direcvec[0])
+        if angle < 0:
+            return angle + 2 * np.pi
+        return angle
+
+    # gets general direction
+    # 90 degree quadrants
+    def get_direction(self):
+        angle = self.get_raw_angle()
+        if angle <= np.pi / 4 or angle > 7 * np.pi / 4:
+            return "back"
+        elif angle <= 3 *np.pi / 4:
+            return "left"
+        elif angle <= 5 * np.pi / 4:
+            return "forward"
+        else:
+            return "right"
+
+
     # getter for hang time
     # in milliseconds, subtracts timestamps
     def get_hang_time(self):

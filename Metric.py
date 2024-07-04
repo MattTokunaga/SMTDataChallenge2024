@@ -26,10 +26,10 @@ class Metric:
     
     # tests the metric to see if it is significantly different from being random
     def test_metric(self, N = 1000):
-        Route.find_all_relevant(self)
+        Route.find_all_relevant([self])
         df = Route.get_all_routes_df()
         home_only = df[df["player_id"].apply(lambda x: len(str(x)) == 3)]
-        PermHelpers.permutation_tester(home_only, "player_id", N)
+        PermHelpers.permutation_tester(home_only, "player_id", N, self.get_name())
 
 # relevancy function for any metric that involves any outfielder catching or
 # receiving a ball
@@ -84,4 +84,23 @@ def jump_score(route):
     dotprod = three_vec[0] * total_vec[0] + three_vec[1] * total_vec[1]
     return dotprod / total_length
 
+
 statcast_jump = Metric(outfielder_retrieve_or_catch, jump_score, "statcast jump")
+
+# reaction metric
+# same as jump but for first 1.5 seconds instead of 3
+def reaction_score(route):
+    df = route.get_df()
+    if df.shape[0] < 30:
+        return -1
+    start = route.get_start_coords()
+    retrieve = route.get_retrieval_coords()
+    one_half_sec_coords_x = df["field_x"].iloc[29]
+    one_half_sec_coords_y = df["field_y"].iloc[29]
+    total_vec = (retrieve[0] - start[0], retrieve[1] - start[1])
+    three_vec = (one_half_sec_coords_x - start[0], one_half_sec_coords_y - start[1])
+    total_length = route.get_ideal_length()
+    dotprod = three_vec[0] * total_vec[0] + three_vec[1] * total_vec[1]
+    return dotprod / total_length
+
+statcast_reaction = Metric(outfielder_retrieve_or_catch, reaction_score, "statcast reaction")
