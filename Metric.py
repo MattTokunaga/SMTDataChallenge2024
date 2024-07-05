@@ -42,6 +42,13 @@ def outfielder_retrieve_or_catch(play):
         return False
     if 4 not in play["event_code"].values:
         return False
+    outfielderidx = play[(play["player_position"] == 7) 
+                         | (play["player_position"] == 8)
+                         | (play["player_position"] == 9)].index[0]
+    truncated = play.loc[:outfielderidx]
+    if ((truncated["player_position"] > 1)
+        & (truncated["player_position"] < 7)).sum() != 0:
+        return False
     return True
 
 # route efficiency calculation

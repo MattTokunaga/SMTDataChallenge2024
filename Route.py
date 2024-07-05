@@ -12,9 +12,12 @@ class Route:
     relevancy_func = None
 
     all_routes = []
+
+    # these are for debugging purposes, ignore em
     there_but_nan = 0
     not_there_at_all = 0
     something_else = 0
+    no_ball_info = 0
 
     def __init__(self, play, player_pos, ball_pos, game_info):
 
@@ -80,7 +83,7 @@ class Route:
             try:
                 relevant = pd.read_csv(game[3]).groupby("play_per_game").filter(Route.is_relevant())
             except:
-                # print(1/0)
+                #print(1/0)
                 print("game skipped")
                 continue
             pp = pd.read_csv(game[0]) 
@@ -252,6 +255,34 @@ class Route:
         else:
             bounceonly = play.loc[:(play["player_position"] == 255).idxmax()]
             return bounceonly["timestamp"].iloc[-1] - bounceonly["timestamp"].iloc[0]
+        
+    # getter for ball position dataframe
+    def get_ball_pos(self):
+        return self.ball_pos
+
+    # getter for whether the player got to the ball
+    # defined as either catching the ball or being within 3 feet
+    def get_got_to(self):
+        if self.get_was_caught():
+            return True
+        play = self.get_play()
+        idx = play[play["player_position"] == 10].index[0]
+        play = play.loc[idx:].iloc[1:]
+        bounce_time = play["timestamp"].iloc[0]
+        ballpos = self.get_ball_pos()
+        try:
+            bounce_ser = ballpos[ballpos["timestamp"] == bounce_time].iloc[0]
+        except:
+            Route.no_ball_info += 1
+            return False
+        ballx = bounce_ser["ball_position_x"]
+        bally = bounce_ser["ball_position_y"]
+        playpos = self.get_df()
+        bounce_time_df = playpos[np.abs(playpos["timestamp"] - bounce_time) < 20]
+        playerx = bounce_time_df["field_x"].mean()
+        playery = bounce_time_df["field_y"].mean()
+        dist = np.sqrt((playerx - ballx)**2 + (playery - bally)**2)
+        return dist <= 3
 
     # getter for route score
     # score is defined as ideal length / total length
