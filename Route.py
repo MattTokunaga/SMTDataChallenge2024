@@ -218,31 +218,23 @@ class Route:
         retrieve = self.get_retrieval_coords()
         return ((start[0] - retrieve[0])**2 + (start[1] - retrieve[1])**2)**.5
     
-    # getter for ideal route vector direction
-    # angle in radians
-    # 0 is straight back, pi/2 is straight left
-    # pi is straight forward, 3pi/2 is straight right
-    def get_raw_angle(self):
-        start = self.get_start_coords()
-        retrieve = self.get_retrieval_coords()
-        direcvec = (retrieve[0] - start[0], retrieve[1] - start[1])
-        angle = np.arctan2(start[1], start[0]) - np.arctan2(direcvec[1], direcvec[0])
-        if angle < 0:
-            return angle + 2 * np.pi
-        return angle
+    # # getter for ideal route vector direction
+    # # angle in radians
+    # # 0 is straight back, pi/2 is straight left
+    # # pi is straight forward, 3pi/2 is straight right
+    # def get_raw_angle(self):
+    #     start = self.get_start_coords()
+    #     retrieve = self.get_retrieval_coords()
+    #     direcvec = (retrieve[0] - start[0], retrieve[1] - start[1])
+    #     angle = np.arctan2(start[1], start[0]) - np.arctan2(direcvec[1], direcvec[0])
+    #     if angle < 0:
+    #         return angle + 2 * np.pi
+    #     return angle
 
-    # gets general direction
+    # gets general direction WHERE BALL IS RETRIEVED
     # 90 degree quadrants
-    def get_direction(self):
-        angle = self.get_raw_angle()
-        if angle <= np.pi / 4 or angle > 7 * np.pi / 4:
-            return "back"
-        elif angle <= 3 *np.pi / 4:
-            return "left"
-        elif angle <= 5 * np.pi / 4:
-            return "forward"
-        else:
-            return "right"
+    def get_retrieval_direction(self):
+        return Route.find_direction(self.get_start_coords(), self.get_retrieval_coords())
 
 
     # getter for hang time
@@ -259,24 +251,59 @@ class Route:
     # getter for ball position dataframe
     def get_ball_pos(self):
         return self.ball_pos
+    
+    # getter for coordinates where ball lands or is caught
+    def get_landing_coords(self):
+        if self.get_was_caught():
+            return self.get_retrieval_coords()
+        bounce_time = self.get_landing_time()
+        ballpos = self.get_ball_pos()
+        try:
+            bounce_ser = ballpos[ballpos["timestamp"] == bounce_time].iloc[0]
+        except:
+            Route.no_ball_info += 1
+            return self.get_retrieval_coords()
+        ballx = bounce_ser["ball_position_x"]
+        bally = bounce_ser["ball_position_y"]
+        return (ballx, bally)
+
+    # getter for timestamp when ball either lands or is caught
+    def get_landing_time(self):
+        play = self.get_play()
+        idx = play[play["player_position"] == 10].index[0]
+        play = play.loc[idx:].iloc[1:]
+        bounce_time = play["timestamp"].iloc[0]
+        return bounce_time
+    
+    # helper function for finding discretized direction between two points
+    def find_direction(start, end):
+        direcvec = (end[0] - start[0], end[1] - start[1])
+        angle = np.arctan2(start[1], start[0]) - np.arctan2(direcvec[1], direcvec[0])
+        if angle < 0:
+            angle = angle + 2 * np.pi
+        if angle <= np.pi / 4 or angle > 7 * np.pi / 4:
+            return "back"
+        elif angle <= 3 *np.pi / 4:
+            return "left"
+        elif angle <= 5 * np.pi / 4:
+            return "forward"
+        else:
+            return "right"
+
+    # getter for landing direction
+    # direction where ball hits ground or is caught, could be different
+    # from actual retrieval direction
+    def get_direction(self):
+        return Route.find_direction(self.get_start_coords(), self.get_landing_coords())
+
 
     # getter for whether the player got to the ball
     # defined as either catching the ball or being within 3 feet
     def get_got_to(self):
         if self.get_was_caught():
             return True
-        play = self.get_play()
-        idx = play[play["player_position"] == 10].index[0]
-        play = play.loc[idx:].iloc[1:]
-        bounce_time = play["timestamp"].iloc[0]
-        ballpos = self.get_ball_pos()
-        try:
-            bounce_ser = ballpos[ballpos["timestamp"] == bounce_time].iloc[0]
-        except:
-            Route.no_ball_info += 1
-            return False
-        ballx = bounce_ser["ball_position_x"]
-        bally = bounce_ser["ball_position_y"]
+        ballx, bally = self.get_landing_coords()
+        bounce_time = self.get_landing_time()
         playpos = self.get_df()
         bounce_time_df = playpos[np.abs(playpos["timestamp"] - bounce_time) < 20]
         playerx = bounce_time_df["field_x"].mean()
@@ -297,8 +324,10 @@ class Route:
         return out
         # return self.get_ideal_length() / self.get_total_length()
     
+    # getter for score functions
     def get_score_funcs():
         return Route.score_funcs
+    
     # getter for if the ball was caught
     # not a pre-existing instance variable
     def get_was_caught(self):
@@ -396,3 +425,31 @@ class Route:
             scores = pd.Series(scores).rename(metric)
             out = pd.concat([out, scores], axis = 1)
         return out
+    
+    # gets all subroutes for one route
+    def get_subroutes(self):
+        velo_interval = 5 # quarter second
+        rdf = self.get_df()
+        rdf = rdf.iloc[::velo_interval]
+        rdf = rdf[rdf["timestamp"] <= self.get_landing_time()]
+        rdf["distance_remaining"] = np.linalg.norm(rdf[["field_x", "field_y"]].to_numpy() - self.get_landing_coords(), axis = 1)
+        rdf["hang_time_remaining"] = self.get_landing_time() - rdf["timestamp"]
+        rdf["current_coords"] = list(zip(rdf["field_x"], rdf["field_y"]))
+        land_coords = self.get_landing_coords()
+        rdf["updated_direction"] = rdf["current_coords"].apply(lambda x: Route.find_direction(x, land_coords))
+        frame_shift = 1
+        rdf["quarter_sec_ago_coords"] = rdf["current_coords"].shift(frame_shift)
+        rdf.loc[rdf.index[:frame_shift], "quarter_sec_ago_coords"] = rdf["current_coords"].iloc[:frame_shift]
+        rdf["quarter_sec_ago_x"] = rdf["field_x"].shift(frame_shift)
+        rdf["quarter_sec_ago_y"] = rdf["field_y"].shift(frame_shift)
+        rdf.loc[rdf.index[:frame_shift], "quarter_sec_ago_x"] = rdf["field_x"].iloc[:frame_shift]
+        rdf.loc[rdf.index[:frame_shift], "quarter_sec_ago_y"] = rdf["field_y"].iloc[:frame_shift]
+        rdf["quarter_sec_velo"] = np.linalg.norm(rdf[["field_x", "field_y"]].to_numpy() - rdf[["quarter_sec_ago_x", "quarter_sec_ago_y"]].to_numpy(), axis = 1) * 4
+        rdf["was_caught"] = [self.get_was_caught()]*rdf.shape[0]
+        return rdf[["distance_remaining", "hang_time_remaining", "updated_direction", "quarter_sec_velo", "was_caught"]]
+    
+    def get_all_subroutes_df():
+        to_concat = []
+        for route in Route.get_all_routes():
+            to_concat.append(route.get_subroutes())
+        return pd.concat(to_concat)
