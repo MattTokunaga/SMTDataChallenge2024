@@ -81,7 +81,7 @@ class Route:
         for i in range(total):
             game = files[i]
             try:
-                relevant = pd.read_csv(game[3]).groupby("play_per_game").filter(Route.is_relevant())
+                relevant = pd.read_csv(game[3]).groupby("play_id").filter(Route.is_relevant())
             except:
                 #print(1/0)
                 print("game skipped")
@@ -89,8 +89,8 @@ class Route:
             pp = pd.read_csv(game[0]) 
             bp = pd.read_csv(game[1])
             gi = pd.read_csv(game[2])
-            for play_num in relevant["play_per_game"].unique():
-                Route(relevant[relevant["play_per_game"] == play_num], pp, bp, gi)
+            for play_num in relevant["play_id"].unique():
+                Route(relevant[relevant["play_id"] == play_num], pp, bp, gi)
             if i % 10 == 0:
                 print(f"Finished game {i+1} of {total}")
         return True
@@ -444,9 +444,18 @@ class Route:
         rdf["quarter_sec_ago_y"] = rdf["field_y"].shift(frame_shift)
         rdf.loc[rdf.index[:frame_shift], "quarter_sec_ago_x"] = rdf["field_x"].iloc[:frame_shift]
         rdf.loc[rdf.index[:frame_shift], "quarter_sec_ago_y"] = rdf["field_y"].iloc[:frame_shift]
-        rdf["quarter_sec_velo"] = np.linalg.norm(rdf[["field_x", "field_y"]].to_numpy() - rdf[["quarter_sec_ago_x", "quarter_sec_ago_y"]].to_numpy(), axis = 1) * 4
+
+        # pure velo
+        #rdf["quarter_sec_velo"] = np.linalg.norm(rdf[["field_x", "field_y"]].to_numpy() - rdf[["quarter_sec_ago_x", "quarter_sec_ago_y"]].to_numpy(), axis = 1) * 
+        
+        # velo in correct direction
+        a = np.array(list(zip(rdf["field_x"] - rdf["quarter_sec_ago_x"], rdf["field_y"] - rdf["quarter_sec_ago_y"])))
+        b = np.array(list(zip(land_coords[0] - rdf["field_x"], land_coords[1] - rdf["field_y"])))
+        rdf["quarter_sec_velo"] = np.sum(a*b, axis = 1) / np.linalg.norm(list(zip(land_coords[0] - rdf["field_x"], land_coords[1] - rdf["field_y"])), axis =1 ) * 4
+
         rdf["was_caught"] = [self.get_was_caught()]*rdf.shape[0]
-        return rdf[["distance_remaining", "hang_time_remaining", "updated_direction", "quarter_sec_velo", "was_caught"]]
+        rdf["route_obj"] = self
+        return rdf[["route_obj", "distance_remaining", "hang_time_remaining", "updated_direction", "quarter_sec_velo", "was_caught"]]
     
     def get_all_subroutes_df():
         to_concat = []
