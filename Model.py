@@ -17,10 +17,10 @@ def create_model(data):
         ("MLP", MLPClassifier())
     ])
     try:
-        data = data[["direction", "ideal_length", "hang_time", "was_caught"]]
+        data = data[["direction", "bounce_dist", "hang_time", "was_caught"]]
     except:
         raise ValueError("Input data has incorrect format")
-    pl.fit(data[["direction", "ideal_length", "hang_time"]], data["was_caught"])
+    pl.fit(data[["direction", "bounce_dist", "hang_time"]], data["was_caught"])
     return pl
 
 def create_cont_model(data):

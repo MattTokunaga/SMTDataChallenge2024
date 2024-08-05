@@ -91,8 +91,24 @@ def jump_score(route):
     dotprod = three_vec[0] * total_vec[0] + three_vec[1] * total_vec[1]
     return dotprod / total_length
 
+# jump metric but with two seconds instead
+def jump_score2(route):
+    df = route.get_df()
+    if df.shape[0] < 40:
+        return -1
+    start = route.get_start_coords()
+    retrieve = route.get_retrieval_coords()
+    two_sec_coords_x = df["field_x"].iloc[39]
+    two_sec_coords_y = df["field_y"].iloc[39]
+    total_vec = (retrieve[0] - start[0], retrieve[1] - start[1])
+    three_vec = (two_sec_coords_x - start[0], two_sec_coords_y - start[1])
+    total_length = route.get_ideal_length()
+    dotprod = three_vec[0] * total_vec[0] + three_vec[1] * total_vec[1]
+    return dotprod / total_length
+
 
 statcast_jump = Metric(outfielder_retrieve_or_catch, jump_score, "statcast jump")
+statcast_jump2 = Metric(outfielder_retrieve_or_catch, jump_score2, "statcast jump2")
 
 # reaction metric
 # same as jump but for first 1.5 seconds instead of 3
