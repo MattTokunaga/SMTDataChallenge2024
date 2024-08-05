@@ -411,10 +411,14 @@ class Route:
             idl_len = r.get_ideal_length()
             # gets direction, angle in radians
             dir = r.get_direction()
-            datalist.append([r, gs, p_id, pos, lev, idl_len, dir])
+            # gets distance from starting position to bounce/catch position
+            startx, starty = r.get_start_coords()
+            landx, landy = r.get_landing_coords()
+            bd = ((startx - landx)**2 + (starty - landy)**2)**.5
+            datalist.append([r, gs, p_id, pos, lev, idl_len, dir, bd])
 
         # creates dataframe
-        out = pd.DataFrame(columns= ["route_obj", "game_str", "player_id", "position", "level", "ideal_length", "direction"], data = datalist)
+        out = pd.DataFrame(columns= ["route_obj", "game_str", "player_id", "position", "level", "ideal_length", "direction", "bounce_dist"], data = datalist)
 
         # finds scores
         for metric in Route.get_score_funcs():
