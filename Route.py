@@ -456,6 +456,9 @@ class Route:
         a = np.array(list(zip(rdf["field_x"] - rdf["quarter_sec_ago_x"], rdf["field_y"] - rdf["quarter_sec_ago_y"])))
         b = np.array(list(zip(land_coords[0] - rdf["field_x"], land_coords[1] - rdf["field_y"])))
         rdf["quarter_sec_velo"] = np.sum(a*b, axis = 1) / np.linalg.norm(list(zip(land_coords[0] - rdf["field_x"], land_coords[1] - rdf["field_y"])), axis =1 ) * 4
+        if rdf["quarter_sec_velo"].isna().sum() > 0:
+            print("hi")
+            rdf["quarter_sec_velo"].iloc[-1] = rdf["distance_remaining"].iloc[-2] * 4
 
         rdf["was_caught"] = [self.get_was_caught()]*rdf.shape[0]
         rdf["route_obj"] = self
