@@ -339,7 +339,7 @@ class Route:
         return len(intersection) == 0
     
     # uses ipycanvas to visualize route
-    def visualize(self):
+    def visualize(self, save = False):
         # # get coords
         # coords = self.get_coord_tuples()
         # num_coords = len(coords)
@@ -357,8 +357,8 @@ class Route:
         # # draws circles
         # canv.fill_styled_circles(np.array(self.get_x_coords()), np.array(self.get_y_coords()), color = colors, radius = 1)
         # return canv
-        return plot_animation(self.player_pos, self.ball_pos, self.play_id)
-        
+        return plot_animation(self.player_pos, self.ball_pos, self.play_id, save_gif = save)
+
     
     # function to get velocity tuples (just subtracting consecutive positions)
     # (x velocity, y velocity, magnitude)
