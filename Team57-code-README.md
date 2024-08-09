@@ -1,0 +1,1 @@
+﻿# SMTDataChallenge2024
