@@ -1,6 +1,9 @@
+import importlib
+# from Route import Route
+Route = importlib.import_module("Team57-code-Route")
 
-from Route import Route
-import PermHelpers
+# import PermHelpers
+PermHelpers = importlib.import_module("Team57-code-PermHelpers")
 
 # class for metrics
 class Metric:
