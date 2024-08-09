@@ -4,7 +4,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 
+# model that replicates Catch Probability
+# returns an sklearn pipeline object
 def create_model(data):
+    # preprocessing transformations
     preproc = ColumnTransformer(
         transformers= [
             ("one-hot", OneHotEncoder(drop = "first"), ["direction"])
@@ -23,7 +26,10 @@ def create_model(data):
     pl.fit(data[["direction", "bounce_dist", "hang_time"]], data["was_caught"])
     return pl
 
+# model for Dynamic Catch Probability
+# returns an sklearn pipeline object
 def create_cont_model(data):
+    # preprocessing transformations
     preproc = ColumnTransformer(
         transformers = [
             ("one-hot", OneHotEncoder(drop = "first"), ["updated_direction"])
