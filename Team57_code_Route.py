@@ -1,10 +1,17 @@
-from Player import Player
+# from Player import Player
+from Team57_code_Player import Player
+
 from ipycanvas import Canvas
 import numpy as np
 # import pygame
-from FindGameFiles import FindGameFiles
+
+# from FindGameFiles import FindGameFiles
+from Team57_code_FindGameFiles import FindGameFiles
+
 import pandas as pd
-from Animation import plot_animation
+
+# from Animation import plot_animation
+from Team57_code_Animation import plot_animation
 
 class Route:
 
@@ -63,7 +70,8 @@ class Route:
     # instantiates Player and Route objects
     # very much not efficient, the idea is to only use this once for each analysis
     def find_all_relevant(Metrics):
-        from Metric import Metric
+        # from Metric import Metric
+        from Team57_code_Metric import Metric
         Player.clear_existing_players()
         Route.clear_all_routes()
         Route.relevancy_func = Metrics[0].get_relevancy_function()
@@ -432,6 +440,9 @@ class Route:
     
     # gets all subroutes for one route
     def get_subroutes(self):
+        import warnings
+        warnings.simplefilter(action='ignore', category=FutureWarning)
+        warnings.simplefilter(action='ignore', category=RuntimeWarning)
         velo_interval = 5 # quarter second
         rdf = self.get_df()
         rdf = rdf.iloc[::velo_interval]
@@ -457,7 +468,6 @@ class Route:
         b = np.array(list(zip(land_coords[0] - rdf["field_x"], land_coords[1] - rdf["field_y"])))
         rdf["quarter_sec_velo"] = np.sum(a*b, axis = 1) / np.linalg.norm(list(zip(land_coords[0] - rdf["field_x"], land_coords[1] - rdf["field_y"])), axis =1 ) * 4
         if rdf["quarter_sec_velo"].isna().sum() > 0:
-            print("hi")
             rdf["quarter_sec_velo"].iloc[-1] = rdf["distance_remaining"].iloc[-2] * 4
 
         rdf["was_caught"] = [self.get_was_caught()]*rdf.shape[0]
